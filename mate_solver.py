@@ -15,119 +15,56 @@ Uses the `python-chess` library for all rules and move generation.
 References:
 - https://www.chessprogramming.org/Main_Page
 """
-from typing import Optional
-import chess
 
+import chess
+import math 
 
 class MateSolver:
-    """A simple mate searcher skeleton using python-chess.
-
-    Notes:
-    - This is an initial scaffold. The evaluation function is a placeholder and
-      currently returns only mate scores. Material and positional evaluation
-      will be added later.
-    - The minimax search includes alpha-beta pruning and is written recursively.
-    """
-
-    def __init__(self, fen: Optional[str] = None) -> None:
-        """Initialize the solver with an optional FEN. If no FEN provided, use the standard start position."""
-        self.board = chess.Board(fen) if fen else chess.Board()
-
-    def evaluate_position(self, board: chess.Board) -> int:
-        """Non-recursive placeholder evaluation.
-
-        Returns:
-        - +100000 if White has just checkmated Black (very good for White).
-        - -100000 if Black has just checkmated White (very bad for White).
-        - 0 otherwise.
-
-        Important: This function evaluates from White's perspective. A returned
-        positive score means the position is winning for White.
-        """
-        # If the position is checkmate, the side to move is checkmated.
-        # If it's Black to move and the position is checkmate, White delivered mate.
-        if board.is_checkmate():
-            if board.turn == chess.BLACK:
-                # Black to move but is checkmated => White delivered mate
-                return 100000
-            else:
-                # White to move but is checkmated => Black delivered mate
-                return -100000
-
-        # Placeholder: no other evaluation yet
-        return 0
-
-    def minimax_alpha_beta_search(self, board: chess.Board, depth: int, alpha: float, beta: float, is_maximizing_player: bool) -> float:
-        """Recursive minimax search with alpha-beta pruning.
-
-        Signature: (board, depth, alpha, beta, is_maximizing_player)
-
-        The body below contains the full recursive call structure. The current
-        implementation includes comments marking where the base case, the
-        maximizing and minimizing loops, and alpha-beta pruning cuts occur.
-        """
-
-        # ---------- Base case ----------
-        # Base case: depth == 0 or game over (checkmate/stalemate/insufficient material)
-        # In the base case, evaluate the position and return the static score.
-        if depth == 0 or board.is_game_over():
-            return self.evaluate_position(board)
-
-        # ---------- Maximizing player ----------
-        if is_maximizing_player:
-            max_eval = -float("inf")
-            # Maximizing loop: iterate over legal moves for the maximizing side
-            for move in board.legal_moves:
-                board.push(move)
-                # Recurse as the minimizing player
-                score = self.minimax_alpha_beta_search(board, depth - 1, alpha, beta, False)
-                board.pop()
-
-                if score > max_eval:
-                    max_eval = score
-
-                if score > alpha:
-                    alpha = score
-
-                # ---------- Alpha-Beta pruning cut (for maximizing) ----------
-                # If alpha >= beta, we can prune remaining moves
-                if beta <= alpha:
-                    break
-
-            return max_eval
-
-        # ---------- Minimizing player ----------
+    def __init__(self, fen_string=None):
+        # Define score constants for checkmate and draw states
+        self.MATE_SCORE = 100000 
+        self.STALEMATE_SCORE = 0
+        # Load the board, using the standard starting FEN if non is provided
+        if fen_string:
+            self.board = chess.Board(fen_string)
         else:
-            min_eval = float("inf")
-            # Minimizing loop: iterate over legal moves for the minimizing side
-            for move in board.legal_moves:
-                board.push(move)
-                # Recurse as the maximizing player
-                score = self.minimax_alpha_beta_search(board, depth - 1, alpha, beta, True)
-                board.pop()
+            self.board = chess.Board()
+    
+    # The recursive search function will go here 
+    def minimax_alpha_beta_search(self, board, depth, alpha, beta, is_maximizing_player):
+        # Base case: check for terminal states (checkmate, stalemate, draw) or depth limit
+        pass 
 
-                if score < min_eval:
-                    min_eval = score
+    def evaluate_position(self, board):
+        #1. Check for Terminal Game States:
+        
+        # Checkmate is a guaranteed win.
+        if board.is_checkmate():
+            # If it's Black's turn (chess.BLACK), White just checkmated Black.
+            if board.turn == chess.BLACK:
+                return self.MATE_SCORE # White wins (Maximizing Player)
+            else:
+                return -self.MATE_SCORE # Black wins (Minimizing Player)
 
-                if score < beta:
-                    beta = score
+        # Stalemate is a draw.
+        if board.is_stalemate():
+            return self.STALEMATE_SCORE
+            
+        # 2. Non-Terminal States: (Will be filled with material evaluation later)
+        return 0 
 
-                # ---------- Alpha-Beta pruning cut (for minimizing) ----------
-                # If beta <= alpha, we can prune remaining moves
-                if beta <= alpha:
-                    break
-
-            return min_eval
-
-
+# Test code
 if __name__ == "__main__":
-    # Small usage example. NOTE: Running a deep search from the initial
-    # chess starting position will be very slow; this is just an example of
-    # how to call the solver.
-    solver = MateSolver()  # default starting position
-    print("Starting position:")
+    # Example Mate in 1 puzzle FEN (White to move and mate)
+    mate_in_1_fen = "8/R7/5K2/8/8/8/7r/7k w - - 0 1" 
+    solver = MateSolver(mate_in_1_fen)
     print(solver.board)
+    print(f"Is Checkmate? {solver.board.is_checkmate()}")
 
-    # Example shallow search: depth=4 (plies), which corresponds to Mate in 2 searches
-    score = solver.minimax_alpha_beta_search(solver.board, depth=4, alpha=-float('inf'), beta=float('inf'), is_maximizing_player=True)
-    print("Shallow search score:", score)
+
+
+
+
+else:
+
+    print("testing done here")
