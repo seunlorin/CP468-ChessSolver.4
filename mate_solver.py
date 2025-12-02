@@ -32,8 +32,77 @@ class MateSolver:
     
     # The recursive search function will go here 
     def minimax_alpha_beta_search(self, board, depth, alpha, beta, is_maximizing_player):
-        # Base case: check for terminal states (checkmate, stalemate, draw) or depth limit
-        pass 
+        # Base case: when depth = 0 then return score
+        if depth == 0:
+            return self.evaluate_position(board), None
+
+        # Check for checkmate for current side
+        if board.is_checkmate():
+            # If the current side is the maximizing player then White loses resulting in a negative number.
+            if is_maximizing_player:
+                return -100000, None
+            # Otherwise White wins and returns a positive
+            else:
+                return 100000, None
+            # Check for stalement, if there is then return 0
+        if board.is_stalemate():
+            return 0, None
+
+        # Generate a list of all legal moves available
+        legal_moves = list(board.legal_moves)
+        # If there are no legal moves then there is a draw
+        # If not caught in board.is_stalemate() then will be caught here
+        if not legal_moves:
+            return 0, None
+
+        # Check for the maximizing player (White)
+        if is_maximizing_player:
+            max_eval = -float("inf") # Start with lowest score possible
+            best_move = None
+            # Try every legal move possible
+            for move in legal_moves:
+                board.push(move) # Make the move
+                # Recursively search and get the resulting eval_score
+                eval_score, _ = self.minimax_alpha_beta_search(
+                    board, depth - 1, alpha, beta, False
+                )
+                board.pop() # Undo move to try next move
+
+                # Keep the move if it gives a better score
+                if eval_score > max_eval:
+                    max_eval = eval_score
+                    best_move = move
+
+                alpha = max(alpha, max_eval) # Update alpha (best score so far for the maximizer)
+                
+                # Check for alpha-beta prune
+                if beta <= alpha:
+                    break
+
+            return max_eval, best_move
+
+        # Check for minimizing player (Black)
+        # Essentially same as above but for a lower score
+        else:
+            min_eval = float("inf") # Start with highest score possible
+            best_move = None
+
+            for move in legal_moves:
+                board.push(move)
+                eval_score, _ = self.minimax_alpha_beta_search(
+                    board, depth - 1, alpha, beta, True
+                )
+                board.pop()
+
+                if eval_score < min_eval:
+                    min_eval = eval_score
+                    best_move = move
+
+                beta = min(beta, min_eval)
+                if beta <= alpha:
+                    break
+
+            return min_eval, best_move
 
     def evaluate_position(self, board):
         #1. Check for Terminal Game States:
