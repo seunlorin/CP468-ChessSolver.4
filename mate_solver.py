@@ -1,139 +1,178 @@
-"""
-mate_solver.py
-
-Initial Mate Solver scaffold for the term project.
-
-This file provides:
-- `MateSolver` class that can initialize a `chess.Board` from a FEN string.
-- `evaluate_position(board)` placeholder that returns large scores for checkmate states.
-- `minimax_alpha_beta_search(board, depth, alpha, beta, is_maximizing_player)` recursive
-  signature with comments marking the base case, maximizing/minimizing loops, and alpha-beta
-  pruning cut locations.
-
-Uses the `python-chess` library for all rules and move generation.
-
-References:
-- https://www.chessprogramming.org/Main_Page
-"""
-
+import tkinter as tk
 import chess
-import math 
+import math
 
+# ---------- Mate Solver ----------
 class MateSolver:
     def __init__(self, fen_string=None):
-        # Define score constants for checkmate and draw states
-        self.MATE_SCORE = 100000 
+        self.MATE_SCORE = 100000
         self.STALEMATE_SCORE = 0
-        # Load the board, using the standard starting FEN if non is provided
-        if fen_string:
-            self.board = chess.Board(fen_string)
-        else:
-            self.board = chess.Board()
-    
-    # The recursive search function will go here 
-    def minimax_alpha_beta_search(self, board, depth, alpha, beta, is_maximizing_player):
-        # Base case: when depth = 0 then return score
-        if depth == 0:
-            return self.evaluate_position(board), None
+        self.board = chess.Board(fen_string) if fen_string else chess.Board()
+        self.search_depth = 4  # default depth in plies
 
-        # Check for checkmate for current side
+    def set_search_depth(self, depth):
+        """Set search depth in plies (half-moves)"""
+        self.search_depth = depth
+
+    def evaluate_position(self, board, depth):
+        """Evaluate board position. High positive = White winning, High negative = Black winning"""
         if board.is_checkmate():
-            # If the current side is the maximizing player then White loses resulting in a negative number.
-            if is_maximizing_player:
-                return -100000, None
-            # Otherwise White wins and returns a positive
+            if board.turn == chess.WHITE:
+                return -self.MATE_SCORE + depth  # Black delivered mate
             else:
-                return 100000, None
-            # Check for stalement, if there is then return 0
+                return self.MATE_SCORE - depth   # White delivered mate
         if board.is_stalemate():
-            return 0, None
+            return 0
 
-        # Generate a list of all legal moves available
-        legal_moves = list(board.legal_moves)
-        # If there are no legal moves then there is a draw
-        # If not caught in board.is_stalemate() then will be caught here
-        if not legal_moves:
-            return 0, None
+        # Material evaluation for non-terminal positions
+        piece_values = {
+            chess.PAWN: 100,
+            chess.KNIGHT: 300,
+            chess.BISHOP: 300,
+            chess.ROOK: 500,
+            chess.QUEEN: 900,
+            chess.KING: 0
+        }
 
-        # Check for the maximizing player (White)
-        if is_maximizing_player:
-            max_eval = -float("inf") # Start with lowest score possible
-            best_move = None
-            # Try every legal move possible
-            for move in legal_moves:
-                board.push(move) # Make the move
-                # Recursively search and get the resulting eval_score
-                eval_score, _ = self.minimax_alpha_beta_search(
-                    board, depth - 1, alpha, beta, False
-                )
-                board.pop() # Undo move to try next move
+        score = 0
+        for square in chess.SQUARES:
+            piece = board.piece_at(square)
+            if piece:
+                value = piece_values[piece.piece_type]
+                score += value if piece.color == chess.WHITE else -value
+        return score
 
-                # Keep the move if it gives a better score
+    def minimax_alpha_beta_search(self, board, depth=None, alpha=-math.inf, beta=math.inf):
+        if depth is None:
+            depth = self.search_depth
+
+        if depth == 0 or board.is_game_over():
+            return self.evaluate_position(board, depth), None
+
+        maximizing = board.turn == chess.WHITE
+        best_move = None
+
+        if maximizing:
+            max_eval = -math.inf
+            for move in board.legal_moves:
+                board.push(move)
+                eval_score, _ = self.minimax_alpha_beta_search(board, depth - 1, alpha, beta)
+                board.pop()
                 if eval_score > max_eval:
                     max_eval = eval_score
                     best_move = move
-
-                alpha = max(alpha, max_eval) # Update alpha (best score so far for the maximizer)
-                
-                # Check for alpha-beta prune
+                alpha = max(alpha, max_eval)
                 if beta <= alpha:
                     break
-
             return max_eval, best_move
-
-        # Check for minimizing player (Black)
-        # Essentially same as above but for a lower score
         else:
-            min_eval = float("inf") # Start with highest score possible
-            best_move = None
-
-            for move in legal_moves:
+            min_eval = math.inf
+            for move in board.legal_moves:
                 board.push(move)
-                eval_score, _ = self.minimax_alpha_beta_search(
-                    board, depth - 1, alpha, beta, True
-                )
+                eval_score, _ = self.minimax_alpha_beta_search(board, depth - 1, alpha, beta)
                 board.pop()
-
                 if eval_score < min_eval:
                     min_eval = eval_score
                     best_move = move
-
                 beta = min(beta, min_eval)
                 if beta <= alpha:
                     break
-
             return min_eval, best_move
 
-    def evaluate_position(self, board):
-        #1. Check for Terminal Game States:
-        
-        # Checkmate is a guaranteed win.
-        if board.is_checkmate():
-            # If it's Black's turn (chess.BLACK), White just checkmated Black.
-            if board.turn == chess.BLACK:
-                return self.MATE_SCORE # White wins (Maximizing Player)
-            else:
-                return -self.MATE_SCORE # Black wins (Minimizing Player)
+    def get_mate_sequence(self):
+        """Return the sequence of moves leading to mate, using the search_depth"""
+        sequence = []
+        temp_board = self.board.copy()
 
-        # Stalemate is a draw.
-        if board.is_stalemate():
-            return self.STALEMATE_SCORE
-            
-        # 2. Non-Terminal States: (Will be filled with material evaluation later)
-        return 0 
+        for move_num in range(self.search_depth):
+            remaining_depth = self.search_depth - move_num
+            score, move = self.minimax_alpha_beta_search(temp_board, depth=remaining_depth)
+            if move is None:
+                break
+            sequence.append(move)
+            temp_board.push(move)
+            if temp_board.is_checkmate():
+                break
+        return sequence
 
-# Test code
+
+# ---------- Tkinter GUI ----------
+CELL_SIZE = 60
+BOARD_COLOR = ["#F0D9B5", "#B58863"]
+CHESS_PIECES = {
+    chess.PAWN: '♙', chess.KNIGHT: '♘', chess.BISHOP: '♗', chess.ROOK: '♖', chess.QUEEN: '♕', chess.KING: '♔',
+    'black_pawn': '♟', 'black_knight': '♞', 'black_bishop': '♝', 'black_rook': '♜', 'black_queen': '♛', 'black_king': '♚'
+}
+symbol_to_name = {'p':'pawn','r':'rook','n':'knight','b':'bishop','q':'queen','k':'king'}
+
+class ChessGUI:
+    def __init__(self, root, solver, move_delay=1000):
+        self.root = root
+        self.solver = solver
+        self.move_delay = move_delay
+        self.canvas = tk.Canvas(root, width=8*CELL_SIZE, height=8*CELL_SIZE)
+        self.canvas.pack()
+
+        # Solve mate problem
+        print("Solving mate problem...")
+        self.sequence = solver.get_mate_sequence()
+        print(f"Found sequence with {len(self.sequence)} moves: {[str(m) for m in self.sequence]}")
+
+        self.move_index = 0
+        self.draw_board()
+        self.root.after(self.move_delay, self.animate_next_move)
+
+    def draw_board(self):
+        self.canvas.delete("all")
+        for row in range(8):
+            for col in range(8):
+                color = BOARD_COLOR[(row + col) % 2]
+                x1 = col * CELL_SIZE
+                y1 = row * CELL_SIZE
+                x2 = x1 + CELL_SIZE
+                y2 = y1 + CELL_SIZE
+                self.canvas.create_rectangle(x1, y1, x2, y2, fill=color)
+
+                # Map Tkinter row/col to chess square
+                chess_row = 7 - row
+                square = chess.square(col, chess_row)
+                piece = self.solver.board.piece_at(square)
+                if piece:
+                    if piece.color == chess.WHITE:
+                        text = CHESS_PIECES[piece.piece_type]
+                    else:
+                        name = symbol_to_name[piece.symbol().lower()]
+                        text = CHESS_PIECES['black_' + name]
+                    self.canvas.create_text(
+                        x1 + CELL_SIZE // 2,
+                        y1 + CELL_SIZE // 2,
+                        text=text,
+                        font=("Arial", 32)
+                    )
+
+    def animate_next_move(self):
+        if self.move_index < len(self.sequence):
+            move = self.sequence[self.move_index]
+            print(f"Move {self.move_index + 1}: {move}")
+            self.solver.board.push(move)
+            self.draw_board()
+            self.move_index += 1
+            self.root.after(self.move_delay, self.animate_next_move)
+        else:
+            if self.solver.board.is_checkmate():
+                print("Checkmate!")
+
+
+# ---------- Run ----------
 if __name__ == "__main__":
-    # Example Mate in 1 puzzle FEN (White to move and mate)
-    mate_in_1_fen = "8/R7/5K2/8/8/8/7r/7k w - - 0 1" 
-    solver = MateSolver(mate_in_1_fen)
-    print(solver.board)
-    print(f"Is Checkmate? {solver.board.is_checkmate()}")
+    # Example: Mate-in-3 puzzle
+    fen = "r1b1qrk1/ppp2pp1/3p1PpQ/6B1/2B1PR2/2P4P/PP4P1/R5K1"
+    solver = MateSolver(fen)
 
+    # Set search depth explicitly: 4 plies for mate-in-2 set to 6 for mate in 3
+    solver.set_search_depth(6)
 
-
-
-
-else:
-
-    print("testing done here")
+    root = tk.Tk()
+    root.title("Mate-in-N Solver GUI")
+    gui = ChessGUI(root, solver, move_delay=1500)
+    root.mainloop()
