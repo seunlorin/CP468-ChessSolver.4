@@ -178,9 +178,11 @@ class ChessGUI:
         button_frame = tk.Frame(root)
         button_frame.pack(pady=5)
 
+        #solve button
         self.solve_button = tk.Button(button_frame, text="Solve", command=self.solve)
         self.solve_button.pack(side=tk.LEFT, padx=5)
 
+        #next step button
         self.step_button = tk.Button(button_frame, text="Next Move", command=self.step)
         self.step_button.pack(side=tk.LEFT, padx=5)
 
