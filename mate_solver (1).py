@@ -247,12 +247,15 @@ class ChessGUI:
 
 
 if __name__ == "__main__":
-    #insert fen codes
     fen = "2B5/8/3K4/1p6/2k5/P4P2/1B6/N4N2 w - - 0 1"
+    n = 2  #mate in n moves
+    
+    #insert fen codes
     solver = MateSolver(fen)
 
     #adjust depth, set to 4 for mate in 2, set to 6 for mate in 3
-    solver.set_search_depth(4)
+    depth = 4 if n == 2 else 6
+    solver.set_search_depth(depth)
 
     root = tk.Tk()
     root.title("Mate-in-N Solver GUI")
