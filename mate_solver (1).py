@@ -232,11 +232,11 @@ class ChessGUI:
 # ---------- Run ----------
 if __name__ == "__main__":
     # Example: Mate-in-3 puzzle
-    fen = "4rrk1/pppb4/7p/3P2pq/3Q4/P5P1/1PP2nKP/R3RNN1 b - - 0 1"
+    fen = "2B5/8/3K4/1p6/2k5/P4P2/1B6/N4N2 w - - 0 1"
     solver = MateSolver(fen)
 
     # Set search depth explicitly: 4 plies for mate-in-2 set to 6 for mate in 3
-    solver.set_search_depth(6)
+    solver.set_search_depth(4)
 
     root = tk.Tk()
     root.title("Mate-in-N Solver GUI")
