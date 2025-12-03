@@ -20,9 +20,9 @@ class MateSolver:
     def evaluate_position(self, board, depth):
         if board.is_checkmate():
             if board.turn == chess.WHITE:
-                return -self.MATE_SCORE + depth  #black mated
+                return -self.MATE_SCORE + depth  #black mated NEGATIVE SCORE
             else:
-                return self.MATE_SCORE - depth   #white matd
+                return self.MATE_SCORE - depth   #white mated HIGH POSITIVE SCORE
         if board.is_stalemate():
             return 0
 
@@ -70,10 +70,12 @@ class MateSolver:
         if depth is None:
             depth = self.search_depth
 
+        #stop search if we exceed max nodes
         self.nodes_searched += 1
         if self.nodes_searched > self.MAX_NODES:
             return self.evaluate_position(board, depth), None
-
+        
+        #base case if depth is 0 or game is over
         if depth == 0 or board.is_game_over():
             return self.evaluate_position(board, depth), None
 
@@ -81,28 +83,36 @@ class MateSolver:
         best_move = None
 
         if maximizing:
+            #white wants to maximize
             max_eval = -math.inf
+
+            #iterate over ordered moves
             for move in self.ordered_moves(board):
-                board.push(move)
+                board.push(move) #do the move
                 eval_score, _ = self.minimax_alpha_beta_search(board, depth - 1, alpha, beta)
-                board.pop()
+                board.pop() #undo the move
+
+                #update the best score and move
                 if eval_score > max_eval:
                     max_eval = eval_score
                     best_move = move
                     # early mate cutoff
                     if max_eval >= self.MATE_SCORE - depth:
                         return max_eval, best_move
-
+                    
+                #alpha update and pruning check
                 alpha = max(alpha, max_eval)
-                if beta <= alpha:
+                if beta <= alpha: #beta cutoff
                     break
             return max_eval, best_move
         else:
+            #black wants to minimize
             min_eval = math.inf
+
             for move in self.ordered_moves(board):
-                board.push(move)
+                board.push(move) #do the move
                 eval_score, _ = self.minimax_alpha_beta_search(board, depth - 1, alpha, beta)
-                board.pop()
+                board.pop() #undo the move
                 if eval_score < min_eval:
                     min_eval = eval_score
                     best_move = move
@@ -110,8 +120,9 @@ class MateSolver:
                     if min_eval <= -self.MATE_SCORE + depth:
                         return min_eval, best_move
                     
+                #alpha update and pruning check
                 beta = min(beta, min_eval)
-                if beta <= alpha:
+                if beta <= alpha: #beta cutoff
                     break
             return min_eval, best_move
 
@@ -120,12 +131,18 @@ class MateSolver:
         sequence = []
         temp_board = self.board.copy()
 
-        #reset nodes searched
+        #reset counter before searching
         self.nodes_searched = 0
 
         for move_num in range(self.search_depth):
+
+            #remaining depths shrinks as we step
             remaining_depth = self.search_depth - move_num
+
+            #use minimax to find best move
             score, move = self.minimax_alpha_beta_search(temp_board, depth=remaining_depth)
+
+            #if no legal moves available then stop
             if move is None:
                 break
             sequence.append(move)
@@ -186,6 +203,8 @@ class ChessGUI:
 
     def draw_board(self):
         self.canvas.delete("all")
+
+        #generate the 8x8 board
         for row in range(8):
             for col in range(8):
                 color = BOARD_COLOR[(row + col) % 2]
