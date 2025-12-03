@@ -2,33 +2,31 @@ import tkinter as tk
 import chess
 import math
 
-# ---------- Mate Solver ----------
+
 class MateSolver:
     def __init__(self, fen_string=None):
         self.MATE_SCORE = 100000
         self.STALEMATE_SCORE = 0
         self.board = chess.Board(fen_string) if fen_string else chess.Board()
         self.start_board = self.board.copy()
-        self.search_depth = 4  # default depth in plies
-        self.nodes_searched = 0 # tracking nodes
-        self.MAX_NODES = 200_000 # node limit for gui
+        self.search_depth = 4  #default depth in plies
+        self.nodes_searched = 0 #tracking nodes
+        self.MAX_NODES = 200_000 #node limit for gui
 
 
     def set_search_depth(self, depth):
-        """Set search depth in plies (half-moves)"""
         self.search_depth = depth
 
     def evaluate_position(self, board, depth):
-        """Evaluate board position. High positive = White winning, High negative = Black winning"""
         if board.is_checkmate():
             if board.turn == chess.WHITE:
-                return -self.MATE_SCORE + depth  # Black delivered mate
+                return -self.MATE_SCORE + depth  #black mated
             else:
-                return self.MATE_SCORE - depth   # White delivered mate
+                return self.MATE_SCORE - depth   #white matd
         if board.is_stalemate():
             return 0
 
-        # Material evaluation for non-terminal positions
+        #piece material scoring
         piece_values = {
             chess.PAWN: 100,
             chess.KNIGHT: 300,
@@ -52,13 +50,13 @@ class MateSolver:
         def score_move(move):
             score = 0
 
-            # 1. Checks first (most important for mate puzzles)
+            #checks this first
             board.push(move)
             if board.is_check():
                 score += 10000
             board.pop()
 
-            # 2. Captures
+            #check if capture
             if board.is_capture(move):
                 score += 5000
 
@@ -72,11 +70,9 @@ class MateSolver:
         if depth is None:
             depth = self.search_depth
 
-        #   Limit nodes searched for GUI responsiveness
         self.nodes_searched += 1
         if self.nodes_searched > self.MAX_NODES:
             return self.evaluate_position(board, depth), None
-
 
         if depth == 0 or board.is_game_over():
             return self.evaluate_position(board, depth), None
@@ -120,11 +116,11 @@ class MateSolver:
             return min_eval, best_move
 
     def get_mate_sequence(self):
-        """Return the sequence of moves leading to mate, using the search_depth"""
+        #return sequence of nodes towards mate
         sequence = []
         temp_board = self.board.copy()
 
-        # Reset nodes searched
+        #reset nodes searched
         self.nodes_searched = 0
 
         for move_num in range(self.search_depth):
@@ -139,7 +135,7 @@ class MateSolver:
         return sequence
 
 
-# ---------- Tkinter GUI ----------
+#gui
 CELL_SIZE = 60
 BOARD_COLOR = ["#F0D9B5", "#B58863"]
 CHESS_PIECES = {
@@ -156,12 +152,12 @@ class ChessGUI:
         self.canvas = tk.Canvas(root, width=8*CELL_SIZE, height=8*CELL_SIZE)
         self.canvas.pack()
 
-        # Get mate sequence
+        #get the mate sequence
         self.sequence = []
         self.move_index = 0
         self.draw_board()
 
-         # Buttons
+         #buttons
         button_frame = tk.Frame(root)
         button_frame.pack(pady=5)
 
@@ -199,7 +195,7 @@ class ChessGUI:
                 y2 = y1 + CELL_SIZE
                 self.canvas.create_rectangle(x1, y1, x2, y2, fill=color)
 
-                # Map Tkinter row/col to chess square
+                #Map Tkinter row/col to chess square
                 chess_row = 7 - row
                 square = chess.square(col, chess_row)
                 piece = self.solver.board.piece_at(square)
@@ -229,13 +225,12 @@ class ChessGUI:
                 print("Checkmate!")
 
 
-# ---------- Run ----------
 if __name__ == "__main__":
-    # Example: Mate-in-3 puzzle
+    #insert fen codes
     fen = "2B5/8/3K4/1p6/2k5/P4P2/1B6/N4N2 w - - 0 1"
     solver = MateSolver(fen)
 
-    # Set search depth explicitly: 4 plies for mate-in-2 set to 6 for mate in 3
+    #adjust depth, set to 4 for mate in 2, set to 6 for mate in 3
     solver.set_search_depth(4)
 
     root = tk.Tk()
