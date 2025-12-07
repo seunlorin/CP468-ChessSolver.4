@@ -1,7 +1,7 @@
 import tkinter as tk
 import chess
 import math
-
+import sys
 
 class MateSolver:
     def __init__(self, fen_string=None):
@@ -11,7 +11,7 @@ class MateSolver:
         self.start_board = self.board.copy()
         self.search_depth = 4  #default depth in plies
         self.nodes_searched = 0 #tracking nodes
-        self.MAX_NODES = 200_000 #node limit for gui
+        self.MAX_NODES = 2_000_000 #node limit for gui
 
 
     def set_search_depth(self, depth):
@@ -191,6 +191,7 @@ class ChessGUI:
         self.solver.board = self.solver.start_board.copy()
         self.sequence = self.solver.get_mate_sequence()
         self.move_index = 0
+        self.draw_board()
         print(f"Found sequence: {[str(m) for m in self.sequence]}")
 
     def step(self):
@@ -247,14 +248,19 @@ class ChessGUI:
 
 
 if __name__ == "__main__":
-    fen = "2B5/8/3K4/1p6/2k5/P4P2/1B6/N4N2 w - - 0 1"
-    n = 2  #mate in n moves
+    if len(sys.argv) > 1: #first argument is fen, second is n
+        fen = sys.argv[1]
+        n = int(sys.argv[2])  #mate in n moves
+    else:
+        print("Using default mate problem: Mate in 2")
+        fen = "2B5/8/3K4/1p6/2k5/P4P2/1B6/N4N2 w - - 0 1"
+        n = 2  #mate in n moves
     
     #insert fen codes
     solver = MateSolver(fen)
 
-    #adjust depth, set to 4 for mate in 2, set to 6 for mate in 3
-    depth = 4 if n == 2 else 6
+    # dephth is 2 n anyways
+    depth = 2 * n
     solver.set_search_depth(depth)
 
     root = tk.Tk()
